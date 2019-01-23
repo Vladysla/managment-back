@@ -12,26 +12,32 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function getAllAvailableProductsForPlace(Request $request)
     {
-        $product = ProductSum::find(1);
-        $product->product->only(['id', 'brand', 'model']);
-        $product->color;
-        $product->size;
-        $product->place;
+        $products = ProductSum::where('place_id', $request->user()->place->id)->where('sold', 0)->paginate(40);
+        foreach ($products as $product) {
+            $product->product;
+            $product->color;
+            $product->size;
+            $product->place;
+        }
 
-        return response()->json($product->only(['id', 'sold', 'sold_at', 'product', 'color', 'size', 'place']));
+        return response()->json($products);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function getAllAvailableProducts()
     {
-        //
+        $products = ProductSum::where('sold', 0)->paginate(40);
+        foreach ($products as $product) {
+            $product->product;
+            $product->color;
+            $product->size;
+            $product->place;
+        }
+
+        return response()->json($products);
     }
+
 
     /**
      * Store a newly created resource in storage.
@@ -52,7 +58,13 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        //
+        $product = ProductSum::find((int) $id);
+        $product->product->only(['id', 'brand', 'model']);
+        $product->color;
+        $product->size;
+        $product->place;
+
+        return response()->json($product->only(['id', 'sold', 'sold_at', 'product', 'color', 'size', 'place']));
     }
 
     /**
