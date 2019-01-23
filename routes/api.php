@@ -18,12 +18,16 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('signup', 'AuthController@signup');
 });
 
+Route::group(['middleware' => ['auth:api', 'admin']], function (){
+    Route::get('/products', 'ProductController@getAllAvailableProducts');
+    Route::post('/products', 'ProductController@storeProduct');
+    Route::get('user', 'AuthController@user');
+});
+
 Route::group(['middleware' => 'auth:api'], function () {
     Route::get('logout', 'AuthController@logout');
-    Route::get('user', 'AuthController@user');
 
     Route::get('/my/products', 'ProductController@getAllAvailableProductsForPlace');
 });
 
-Route::get('/products', 'ProductController@getAllAvailableProducts');
 Route::get('/product/{id}', 'ProductController@show');

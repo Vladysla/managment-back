@@ -28,6 +28,15 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
 
+    public function getRoleAttribute($value)
+    {
+        if($value) {
+            return $value;
+        }
+
+        return 'manager';
+    }
+
     public function place()
     {
         return $this->belongsTo('App\Place', 'place_id');
