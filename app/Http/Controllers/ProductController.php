@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\ProductSum;
 use App\Product;
+use DB;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -24,9 +25,44 @@ class ProductController extends Controller
      */
     public function getAllAvailableProducts()
     {
-        $products = ProductSum::where('sold', 0)->with('product', 'color', 'size', 'place', 'type')->paginate(10);
+        //$products = ProductSum::where('sold', 0)->with('product', 'color', 'size', 'place', 'type')->groupBy('product_id')->paginate(10);
+        //$products = \DB::table('products_sum');
+        $products = DB::select(DB::raw('SELECT product_id, sizes.name as size_name, colors.name as color_name, COUNT(*) as products_count 
+                                                FROM products_sum 
+                                                JOIN colors ON colors.id = products_sum.color_id 
+                                                JOIN sizes ON sizes.id = products_sum.size_id 
+                                                GROUP BY product_id, sizes.name, colors.name'));
+        $newProd = DB::table("products_sum")->select(DB::raw("product_id, sizes.name as size_name, colors.name as color_name, COUNT(*) as products_count"))
+                        ->join('colors', 'colors.id', 'products_sum.color_id')
+                        ->join('sizes', 'sizes.id', 'products_sum.size_id')
+                        ->groupBy('product_id', 'sizes.name', 'colors.name')->paginate(3   );
+        //dd($products);
 
-        return response()->json($products);
+        $items = [];
+        foreach ($newProd->items() as $product) {
+            if(!array_key_exists($product->product_id, $items)) {
+                $items[$product->product_id] = [];
+            }
+            if(!array_key_exists($product->size_name, $items[$product->product_id])){
+                $items[$product->product_id][$product->size_name] = [];
+            }
+            if(!array_key_exists($product->color_name, $items[$product->product_id][$product->size_name])){
+                $items[$product->product_id][$product->size_name][$product->color_name] = $product->products_count;
+            } else {
+                $items[$product->product_id][$product->size_name][$product->color_name] = $product->products_count;
+            }
+        }
+      //  dd($newProd->items());
+
+        $data = [
+            'items' => $items,
+            'lastPage' => $newProd->lastPage(),
+            'currentPage' => $newProd->currentPage()
+        ];
+        $collective = collect();
+
+        dd($data);
+        //return response()->json($obj);
     }
 
 
