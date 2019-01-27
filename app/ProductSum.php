@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class ProductSum extends Model
 {
@@ -35,6 +36,18 @@ class ProductSum extends Model
     public function type()
     {
         return $this->belongsTo('App\Type', 'type_id');
+    }
+
+    public function getProducts()
+    {
+
+    }
+
+    public function getTotalProducts($condition)
+    {
+        DB::table('products_sum')
+            ->select(DB::raw("COUNT(DISTINCT `product_id`) as count"))
+            ->where($condition)->first()->count;
     }
 
 }

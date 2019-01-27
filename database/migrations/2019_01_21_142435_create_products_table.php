@@ -20,7 +20,10 @@ class CreateProductsTable extends Migration
             $table->string('price_arrival', 10)->nullable();
             $table->string('price_sell', 10);
             $table->string('photo', 255)->nullable();
+            $table->unsignedInteger('type_id');
             $table->timestamps();
+
+            $table->foreign('type_id')->references('id')->on('types');
         });
     }
 
