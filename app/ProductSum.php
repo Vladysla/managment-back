@@ -43,11 +43,61 @@ class ProductSum extends Model
 
     }
 
-    public function getTotalProducts($condition)
+    /**
+     * @param array $condition
+     * @return integer
+     */
+    public static function getTotalProducts(array $condition)
     {
-        DB::table('products_sum')
+        return DB::table('products_sum')
             ->select(DB::raw("COUNT(DISTINCT `product_id`) as count"))
+            ->join('products', 'products.id', 'products_sum.product_id')
             ->where($condition)->first()->count;
+    }
+
+    public static function getDistinctProducts(array $condition)
+    {
+        return DB::table('products_sum')->select('product_id')
+            ->join('products', 'products.id', 'products_sum.product_id')
+            ->where($condition)->distinct();
+    }
+
+    public static function getProductInfo($product_id, $sold)
+    {
+        dd(DB::table("products_sum")->select(DB::raw("product_id, brand, model, price_arrival, price_sell, sizes.name as size_name, colors.name as color_name, COUNT(*) as products_count"))
+            ->join('colors', 'colors.id', 'products_sum.color_id')
+            ->join('sizes', 'sizes.id', 'products_sum.size_id')
+            ->join('products', 'products.id', 'products_sum.product_id')
+            ->where('product_id', $product_id)
+            ->where('sold', $sold)
+            ->groupBy('product_id', 'sizes.name', 'colors.name')->toSql());
+        return DB::table("products_sum")->select(DB::raw("product_id, brand, model, price_arrival, price_sell, sizes.name as size_name, colors.name as color_name, COUNT(*) as products_count"))
+            ->join('colors', 'colors.id', 'products_sum.color_id')
+            ->join('sizes', 'sizes.id', 'products_sum.size_id')
+            ->join('products', 'products.id', 'products_sum.product_id')
+            ->where('product_id', $product_id)
+            ->where('sold', $sold)
+            ->groupBy('product_id', 'sizes.name', 'colors.name')->get();
+    }
+
+    public static function findProductsTotal($q, $condition)
+    {
+        return DB::table('products_sum')
+            ->select(DB::raw("COUNT(DISTINCT `product_id`) as count"))
+            ->join('products', 'products.id', 'products_sum.product_id')
+            ->where($condition)
+            ->where('products.model', 'LIKE', "%$q%")
+            ->orWhere('products.brand', 'LIKE', "%$q%")->first()->count;
+    }
+
+    public static function findDistinctProducts($q, array $condition)
+    {
+        return DB::table('products_sum')->select('product_id')
+            ->join('products', 'products.id', 'products_sum.product_id')
+            ->where($condition)
+            ->where('products.model', 'LIKE', "%$q%")
+            ->orWhere('products.brand', 'LIKE', "%$q%")
+            ->distinct();
     }
 
 }

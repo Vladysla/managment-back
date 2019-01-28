@@ -4,12 +4,23 @@ namespace App\Http\Controllers;
 
 use App\ProductSum;
 use App\Product;
-use DB;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class ProductController extends Controller
 {
+
+    /**
+     * @param string $message
+     * @param int $status
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function showMessage(string $message, int $status)
+    {
+        return response()->json([
+            'message' => $message
+        ],$status);
+    }
 
     private function getTransformedItems($array){
         $items = [];
@@ -41,43 +52,42 @@ class ProductController extends Controller
         return $items;
     }
 
-    private function paginateProducts(int $perPage, Request $request, $place = false, $sold = '0'){
+    private function paginateProducts(int $perPage, Request $request, $place = "ALL", $type = "ALL", $sold = "NO"){
 
-        $condition = function ($placeId, $sold) {
-            if ($placeId) {
-                return [
-                    ['sold', '=', $sold],
-                    ['place_id', '=', $placeId]
-                ];
+        $condition = function ($placeId, $typeId, $sold) {
+            $options = [];
+            if($sold) {
+                $sold == "NO" ? array_push($options, ['sold', '=', '0']) : array_push($options, ['sold', '=', '1']);
             }
-            return [
-                ['sold', '=', $sold]
-            ];
+            if ($placeId) {
+                $placeId != "ALL" && array_push($options, ['place_id', '=', $placeId]);
+            }
+            if ($typeId) {
+                $typeId != "ALL" && array_push($options, ['products.type_id', '=', $typeId]);
+            }
+            return $options;
         };
 
-        $paginateTotal = DB::table('products_sum')
-            ->select(DB::raw("COUNT(DISTINCT `product_id`) as count"))
-            ->where($condition($place, $sold))->first()->count;
-        $productsQuery = DB::table('products_sum')->select('product_id')->where($condition($place, $sold))->distinct();
+        if($request->input('q')){
+            $paginateTotal = ProductSum::findProductsTotal($request->input('q'), $condition($place, $type, $sold));
+            $productsQuery = ProductSum::findDistinctProducts($request->input('q'),$condition($place, $type, $sold));
+        } else {
+            $paginateTotal = ProductSum::getTotalProducts($condition($place, $type, $sold));
+            $productsQuery = ProductSum::getDistinctProducts($condition($place, $type, $sold));
+        }
         $agrigatesProducts = [];
         $page = $request->input('page') ?:1;
         if ($page) {
             $skip = $perPage * ($page - 1);
             $raw_query = $productsQuery->take($perPage)->skip($skip);
             foreach ($raw_query->get()->all() as $item){
-                $agrigatesProducts[] = DB::table("products_sum")->select(DB::raw("product_id, brand, model, price_arrival, price_sell, sizes.name as size_name, colors.name as color_name, COUNT(*) as products_count"))
-                    ->join('colors', 'colors.id', 'products_sum.color_id')
-                    ->join('sizes', 'sizes.id', 'products_sum.size_id')
-                    ->join('products', 'products.id', 'products_sum.product_id')
-                    ->where('product_id', $item->product_id)
-                    ->where('sold', $sold)
-                    ->groupBy('product_id', 'sizes.name', 'colors.name')->get();
+                $agrigatesProducts[] = ProductSum::getProductInfo($item->product_id, $sold);
             }
         }
 
         $items = $this->getTransformedItems($agrigatesProducts);
 
-        return new Paginator($items, $paginateTotal, 2, $request->page, [
+        return new Paginator($items, $paginateTotal, $perPage, $request->page, [
             'path'  => $request->url(),
             'query' => $request->query(),
         ]);
@@ -94,13 +104,35 @@ class ProductController extends Controller
     }
 
 
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function getAllAvailableProducts(Request $request)
     {
+
+        if($request->input('type_id') && $request->input('place_id')) {
+            return $this->getAvailableProductsForPlaceType($request, $request->input('place_id'), $request->input('type_id'));
+        }
+
+        if($request->input('place_id')) {
+            return $this->getAvailableProductsForPlaceType($request, $request->input('place_id'), "ALL");
+        }
+
+        if($request->input('type_id')) {
+            return $this->getAvailableProductsForPlaceType($request, "ALL", $request->input('type_id'));
+        }
 
         $products = $this->paginateProducts(2, $request);
 
         return response()->json($products);
 
+    }
+
+    private function getAvailableProductsForPlaceType(Request $request, $place_id, $type_id)
+    {
+        $products = $this->paginateProducts(2, $request, $place_id, $type_id);
+        return response()->json($products);
     }
 
 
@@ -109,19 +141,19 @@ class ProductController extends Controller
      *
      * @param Request $request
      * $request->data = {
-            "color_id": {
-                "size_id": 3,
-                "size_id": 2
-            },
-            "color_id": {
-                "size_id": 1
-            }
-        }
+     * "color_id": {
+     * "size_id": 3,
+     * "size_id": 2
+     * },
+     * "color_id": {
+     * "size_id": 1
+     * }
+     * }
+     * @return \Illuminate\Http\JsonResponse
      */
     public function storeProduct(Request $request)
     {
         try {
-            $product_id = 0;
 
             if($request->product_isset) {
                 $product = Product::find($request->product_id);
@@ -159,17 +191,6 @@ class ProductController extends Controller
         }
     }
 
-    /**
-     * @param string $message
-     * @param int $status
-     * @return \Illuminate\Http\JsonResponse
-     */
-    private function showMessage(string $message, int $status)
-    {
-        return response()->json([
-            'message' => $message
-        ],$status);
-    }
 
     /**
      * Display the specified resource.
