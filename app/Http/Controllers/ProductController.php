@@ -22,29 +22,60 @@ class ProductController extends Controller
         ],$status);
     }
 
-    private function getTransformedItems($array){
+    private function getTransformedItems($array, $sold){
         $items = [];
-        foreach ($array as $products) {
-            foreach ($products as $product) {
-                if(!array_key_exists($product->product_id, $items)) {
-                    $items[$product->product_id] = [];
+        if($sold == "NO") {
+            foreach ($array as $products) {
+                foreach ($products as $product) {
+                    if(!array_key_exists($product->product_id, $items)) {
+                        $items[$product->product_id] = [];
+                    }
+                    $items[$product->product_id]['info'] = [
+                        'brand' => $product->brand,
+                        'model' => $product->model,
+                        'price_arrival' => $product->price_arrival,
+                        'price_sell' => $product->price_sell,
+                        'sold_at' => $product->sold_at,
+                        'type' => $product->type_name
+                    ];
+                    if(!array_key_exists('places', $items[$product->product_id])) {
+                        $items[$product->product_id]['places'] = [];
+                    }
+                    if(!array_key_exists($product->place_name, $items[$product->product_id]['places'])) {
+                        $items[$product->product_id]['places'][$product->place_name] = [];
+                    }
+                    if(!array_key_exists($product->size_name, $items[$product->product_id]['places'][$product->place_name])){
+                        $items[$product->product_id]['places'][$product->place_name][$product->size_name] = [];
+                    }
+                    if(!array_key_exists($product->color_name, $items[$product->product_id]['places'][$product->place_name][$product->size_name])){
+                        $items[$product->product_id]['places'][$product->place_name][$product->size_name][$product->color_name] = $product->products_count;
+                    } else {
+                        $items[$product->product_id]['places'][$product->place_name][$product->size_name][$product->color_name] = $product->products_count;
+                    }
                 }
-                $items[$product->product_id]['info'] = [
-                    'brand' => $product->brand,
-                    'model' => $product->model,
-                    'price_arrival' => $product->price_arrival,
-                    'price_sell' => $product->price_sell,
-                ];
-                if(!array_key_exists('sizes', $items[$product->product_id])) {
-                    $items[$product->product_id]['sizes'] = [];
-                }
-                if(!array_key_exists($product->size_name, $items[$product->product_id]['sizes'])){
-                    $items[$product->product_id]['sizes'][$product->size_name] = [];
-                }
-                if(!array_key_exists($product->color_name, $items[$product->product_id]['sizes'][$product->size_name])){
-                    $items[$product->product_id]['sizes'][$product->size_name][$product->color_name] = $product->products_count;
-                } else {
-                    $items[$product->product_id]['sizes'][$product->size_name][$product->color_name] = $product->products_count;
+            }
+        } else {
+            foreach ($array as $products) {
+                foreach ($products as $product) {
+                    $items[$product->sold_at]['info'] = [
+                        'brand' => $product->brand,
+                        'model' => $product->model,
+                        'price_arrival' => $product->price_arrival,
+                        'price_sell' => $product->price_sell,
+                        'sold_at' => $product->sold_at,
+                        'type' => $product->type_name
+                    ];
+                    if(!array_key_exists('sizes', $items[$product->sold_at])) {
+                        $items[$product->sold_at]['sizes'] = [];
+                    }
+                    if(!array_key_exists($product->size_name, $items[$product->sold_at]['sizes'])){
+                        $items[$product->sold_at]['sizes'][$product->size_name] = [];
+                    }
+                    if(!array_key_exists($product->color_name, $items[$product->sold_at]['sizes'][$product->size_name])){
+                        $items[$product->sold_at]['sizes'][$product->size_name][$product->color_name] = $product->products_count;
+                    } else {
+                        $items[$product->sold_at]['sizes'][$product->size_name][$product->color_name] = $product->products_count;
+                    }
                 }
             }
         }
@@ -84,14 +115,14 @@ class ProductController extends Controller
                 $agrigatesProducts[] = ProductSum::getProductInfo($item->product_id, $sold);
             }
         }
-
-        $items = $this->getTransformedItems($agrigatesProducts);
+        $items = $this->getTransformedItems($agrigatesProducts, $sold);
 
         return new Paginator($items, $paginateTotal, $perPage, $request->page, [
             'path'  => $request->url(),
             'query' => $request->query(),
         ]);
     }
+
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -134,6 +165,18 @@ class ProductController extends Controller
         $products = $this->paginateProducts(2, $request, $place_id, $type_id);
         return response()->json($products);
     }
+
+    public function getSoldProducts(Request $request)
+    {
+        if($request->input('place_id')) {
+            $products = $this->paginateProducts(2, $request, $place = $request->input('place_id'), $type = "ALL", $sold = "1");
+            return response()->json($products);
+        }
+
+        $products = $this->paginateProducts(2, $request, $place = "ALL", $type = "ALL", $sold = "1");
+        return response()->json($products);
+    }
+
 
 
     /**

@@ -30,4 +30,5 @@ Route::group(['middleware' => 'auth:api'], function () {
 });
 
 Route::get('/products', 'ProductController@getAllAvailableProducts');
+Route::get('/sale/products', 'ProductController@getSoldProducts');
 Route::get('/product/{id}', 'ProductController@show');

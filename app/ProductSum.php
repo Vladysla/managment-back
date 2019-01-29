@@ -57,27 +57,22 @@ class ProductSum extends Model
 
     public static function getDistinctProducts(array $condition)
     {
-        return DB::table('products_sum')->select('product_id')
+        return DB::table('products_sum')->select('product_id', 'sold_at')
             ->join('products', 'products.id', 'products_sum.product_id')
             ->where($condition)->distinct();
     }
 
     public static function getProductInfo($product_id, $sold)
     {
-        dd(DB::table("products_sum")->select(DB::raw("product_id, brand, model, price_arrival, price_sell, sizes.name as size_name, colors.name as color_name, COUNT(*) as products_count"))
+        return DB::table("products_sum")->select(DB::raw("product_id, brand, model, price_arrival, price_sell, sizes.name as size_name, colors.name as color_name, types.name as type_name, places.name as place_name, sold_at, COUNT(*) as products_count"))
             ->join('colors', 'colors.id', 'products_sum.color_id')
             ->join('sizes', 'sizes.id', 'products_sum.size_id')
             ->join('products', 'products.id', 'products_sum.product_id')
+            ->join('types', 'types.id', 'products.type_id')
+            ->join('places', 'places.id', 'products_sum.place_id')
             ->where('product_id', $product_id)
             ->where('sold', $sold)
-            ->groupBy('product_id', 'sizes.name', 'colors.name')->toSql());
-        return DB::table("products_sum")->select(DB::raw("product_id, brand, model, price_arrival, price_sell, sizes.name as size_name, colors.name as color_name, COUNT(*) as products_count"))
-            ->join('colors', 'colors.id', 'products_sum.color_id')
-            ->join('sizes', 'sizes.id', 'products_sum.size_id')
-            ->join('products', 'products.id', 'products_sum.product_id')
-            ->where('product_id', $product_id)
-            ->where('sold', $sold)
-            ->groupBy('product_id', 'sizes.name', 'colors.name')->get();
+            ->groupBy('product_id', 'sizes.name', 'colors.name', 'places.name', 'sold_at')->get();
     }
 
     public static function findProductsTotal($q, $condition)
