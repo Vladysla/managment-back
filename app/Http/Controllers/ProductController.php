@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Color;
+use App\Place;
 use App\ProductSum;
 use App\Product;
+use App\Size;
+use App\Type;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
@@ -285,5 +289,29 @@ class ProductController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    public function getPlaces()
+    {
+        $places = Place::all();
+        return response()->json($places);
+    }
+
+    public function getTypes()
+    {
+        $places = Type::all();
+        return response()->json($places);
+    }
+
+    public function getColors()
+    {
+        $places = Color::all();
+        return response()->json($places);
+    }
+
+    public function getSizes()
+    {
+        $places = Size::all();
+        return response()->json($places);
     }
 }

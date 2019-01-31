@@ -30,5 +30,11 @@ Route::group(['middleware' => 'auth:api'], function () {
 });
 
 Route::get('/products', 'ProductController@getAllAvailableProducts');
+
+Route::get('/places', 'ProductController@getPlaces');
+Route::get('/types', 'ProductController@getTypes');
+Route::get('/colors', 'ProductController@getColors');
+Route::get('/sizes', 'ProductController@getSizes');
+
 Route::get('/sale/products', 'ProductController@getSoldProducts');
 Route::get('/product/{id}', 'ProductController@show');
