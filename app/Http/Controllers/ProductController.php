@@ -116,12 +116,12 @@ class ProductController extends Controller
             $skip = $perPage * ($page - 1);
             $raw_query = $productsQuery->take($perPage)->skip($skip);
             foreach ($raw_query->get()->all() as $item){
-                $agrigatesProducts[] = ProductSum::getProductInfo($item->product_id, $sold);
+                $agrigatesProducts[] = ProductSum::getProductInfo($item->product_id, $sold)[0];
             }
         }
-        $items = $this->getTransformedItems($agrigatesProducts, $sold);
+        //$items = $this->getTransformedItems($agrigatesProducts, $sold);
 
-        return new Paginator($items, $paginateTotal, $perPage, $request->page, [
+        return new Paginator($agrigatesProducts, $paginateTotal, $perPage, $request->page, [
             'path'  => $request->url(),
             'query' => $request->query(),
         ]);
@@ -179,6 +179,16 @@ class ProductController extends Controller
 
         $products = $this->paginateProducts(2, $request, $place = "ALL", $type = "ALL", $sold = "1");
         return response()->json($products);
+    }
+
+    public function getProductInfo(Request $request, $product_id)
+    {
+        if ($product_id) {
+            $products = ProductSum::getProductFullInfo($product_id, 0);
+            $agrigate[] = $products->all();
+            $items = $this->getTransformedItems($agrigate, 0);
+            return response()->json($items);
+        }
     }
 
 
