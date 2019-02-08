@@ -324,4 +324,23 @@ class ProductController extends Controller
         $places = Size::all();
         return response()->json($places);
     }
+
+    public function getCurrency()
+    {
+        $json_url = file_get_contents('http://bank-ua.com/export/exchange_rate_cash.json');
+        $json = str_replace('},
+        ]',"}
+        ]",$json_url);
+        $dataArr = json_decode($json);
+
+        $data = collect($dataArr);
+
+        foreach ($data as $bank) {
+            if ($bank->bankName == 'ПриватБанк' && $bank->codeAlpha == 'USD') {
+                return response()->json($bank->rateSale);
+            }
+        }
+
+        return response()->json($data);
+    }
 }
