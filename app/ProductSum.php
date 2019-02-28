@@ -55,12 +55,14 @@ class ProductSum extends Model
             ->where($condition)->first()->count;
     }
 
-    public static function getDistinctProducts(array $condition)
+    public static function getDistinctProducts(array $condition, $order = "", $order_direction = "")
     {
+        $order == "" && $order = "model";
+        $order_direction == "" && $order_direction = "desc";
         return DB::table('products_sum')->select('product_id', 'sold_at')
             ->join('products', 'products.id', 'products_sum.product_id')
             ->where($condition)
-            ->orderByDesc('products.model')->distinct();
+            ->orderBy($order, $order_direction)->distinct();
     }
 
     public static function getProductFullInfo($product_id, $sold)

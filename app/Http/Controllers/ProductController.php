@@ -87,7 +87,7 @@ class ProductController extends Controller
         return $items;
     }
 
-    private function paginateProducts(int $perPage, Request $request, $place = "ALL", $type = "ALL", $sold = "NO"){
+    private function paginateProducts(int $perPage, Request $request, $place = "ALL", $type = "ALL", $sold = "NO", $order = "", $orderDir = ""){
 
         $condition = function ($placeId, $typeId, $sold) {
             $options = [];
@@ -108,7 +108,7 @@ class ProductController extends Controller
             $productsQuery = ProductSum::findDistinctProducts($request->input('q'),$condition($place, $type, $sold));
         } else {
             $paginateTotal = ProductSum::getTotalProducts($condition($place, $type, $sold));
-            $productsQuery = ProductSum::getDistinctProducts($condition($place, $type, $sold));
+            $productsQuery = ProductSum::getDistinctProducts($condition($place, $type, $sold), $order, $orderDir);
         }
         $agrigatesProducts = [];
         $page = $request->input('page') ?:1;
@@ -158,15 +158,19 @@ class ProductController extends Controller
             return $this->getAvailableProductsForPlaceType($request, "ALL", $request->input('type_id'));
         }
 
+        if($request->input('order') && $request->input('order_dir')) {
+            return $this->getAvailableProductsForPlaceType($request, $request->input('place_id'), $request->input('type_id'), $request->input('order'), $request->input('order_dir'));
+        }
+
         $products = $this->paginateProducts(2, $request);
 
         return response()->json($products);
 
     }
 
-    private function getAvailableProductsForPlaceType(Request $request, $place_id, $type_id)
+    private function getAvailableProductsForPlaceType(Request $request, $place_id, $type_id, $order = '', $order_dir = "")
     {
-        $products = $this->paginateProducts(2, $request, $place_id, $type_id);
+        $products = $this->paginateProducts(2, $request, $place_id, $type_id, "NO", $order, $order_dir);
         return response()->json($products);
     }
 
@@ -189,6 +193,8 @@ class ProductController extends Controller
             $items = $this->getTransformedItems($agrigate, 0);
             return response()->json($items);
         }
+
+        return $this->showMessage('Product not found!', 403);
     }
 
 
@@ -198,12 +204,12 @@ class ProductController extends Controller
      *
      * @param Request $request
      * $request->data = {
-     * "color_id": {
-     * "size_id": 3,
-     * "size_id": 2
+     * "color_name": {
+     * "size_name": 3,
+     * "size_name": 2
      * },
-     * "color_id": {
-     * "size_id": 1
+     * "color_name": {
+     * "size_name": 1
      * }
      * }
      * @return \Illuminate\Http\JsonResponse
