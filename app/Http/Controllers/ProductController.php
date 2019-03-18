@@ -146,19 +146,16 @@ class ProductController extends Controller
     public function getAllAvailableProducts(Request $request)
     {
 
-        if($request->input('type_id') && $request->input('place_id')) {
+        /*if($request->input('type_id') && $request->input('place_id')) {
             return $this->getAvailableProductsForPlaceType($request, $request->input('place_id'), $request->input('type_id'));
         }
 
-        if($request->input('place_id')) {
-            return $this->getAvailableProductsForPlaceType($request, $request->input('place_id'), "ALL");
-        }
 
         if($request->input('type_id')) {
             return $this->getAvailableProductsForPlaceType($request, "ALL", $request->input('type_id'));
-        }
+        }*/
 
-        if($request->input('order') && $request->input('order_dir')) {
+        if($request->input('order') && $request->input('order_dir') || $request->input('place_id') || $request->input('type_id')) {
             return $this->getAvailableProductsForPlaceType($request, $request->input('place_id'), $request->input('type_id'), $request->input('order'), $request->input('order_dir'));
         }
 
