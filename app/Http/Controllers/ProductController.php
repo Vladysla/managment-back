@@ -346,4 +346,9 @@ class ProductController extends Controller
 
         return response()->json($data);
     }
+
+    public function getSeparatedProductsForPlace(Request $request)
+    {
+        //$products = ProductSum::
+    }
 }
