@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 
 class ProductSum extends Model
 {
+    protected $primaryKey = 'sum_id';
+
     protected $table = 'products_sum';
 
     protected $fillable = [
@@ -38,9 +40,49 @@ class ProductSum extends Model
         return $this->belongsTo('App\Type', 'type_id');
     }
 
-    public function getProducts()
+    public static function getListAvailableProducts(array $condition)
     {
+        $order = 'products.model';
+        $order_direction = 'desc';
+        if (array_key_exists('order', $condition)) {
+            $order = 'products.' . $condition['order'];
+            unset($condition['order']);
+        }
+        if (array_key_exists('order_dir', $condition)) {
+            $order_direction = $condition['order_dir'];
+            unset($condition['order_dir']);
+        }
 
+        return self::with(['product', 'color', 'size', 'place', 'type'])
+            ->join('products', 'products.id', 'products_sum.product_id')
+            ->where($condition)
+            ->orderBy($order, $order_direction)
+            ->paginate(2);
+    }
+
+    public static function findListAvailableProducts(array $condition, $q)
+    {
+        $order = 'products.model';
+        $order_direction = 'desc';
+        if (array_key_exists('order', $condition)) {
+            $order = 'products.' . $condition['order'];
+            unset($condition['order']);
+        }
+        if (array_key_exists('order_dir', $condition)) {
+            $order_direction = $condition['order_dir'];
+            unset($condition['order_dir']);
+        }
+
+        //dd($condition);
+
+        return self::with(['product', 'color', 'size', 'place', 'type'])
+            ->join('products', 'products.id', 'products_sum.product_id')
+            ->where($condition)
+            ->where('products.model', 'LIKE', "%$q%")
+            ->orWhere('products.brand', 'LIKE', "%$q%")
+            ->orWhere('sum_id', 'LIKE', "%$q%")
+            ->orderBy($order, $order_direction)
+            ->paginate(2);
     }
 
     /**

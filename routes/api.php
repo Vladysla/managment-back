@@ -26,7 +26,11 @@ Route::group(['middleware' => ['auth:api', 'admin']], function (){
 Route::group(['middleware' => 'auth:api'], function () {
     Route::get('logout', 'AuthController@logout');
 
-    Route::get('/my/products', 'ProductController@getAllAvailableProductsForPlace');
+//    Route::get('/my/products', 'ProductController@getAllAvailableProductsForPlace');
+    Route::get('/my/products', 'ProductController@getSeparatedProductsForPlace');
+    Route::post('/my/transfer', 'TransferController@transferProducts');
+    Route::get('/my/transfer/get', 'TransferController@getListMyIncomeProducts');
+    Route::post('/my/transfer/apply', 'TransferController@applyTransfer');
 });
 
 Route::get('/products', 'ProductController@getAllAvailableProducts');
@@ -39,4 +43,3 @@ Route::get('/sizes', 'ProductController@getSizes');
 
 Route::get('/sale/products', 'ProductController@getSoldProducts');
 Route::get('/currency', 'ProductController@getCurrency');
-

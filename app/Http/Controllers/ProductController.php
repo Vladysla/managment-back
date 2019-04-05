@@ -349,6 +349,23 @@ class ProductController extends Controller
 
     public function getSeparatedProductsForPlace(Request $request)
     {
-        //$products = ProductSum::
+        $condition = function ($place_id, $type_id, $order, $order_dir) {
+            $options = [];
+            array_push($options, ['sold', '=', '0']);
+            array_push($options, ['place_id', '=', $place_id]);
+            $type_id && array_push($options, ['type_id', '=', $type_id]);
+            $order && $options['order'] = $order;
+            $order_dir && $options['order_dir'] = $order_dir;
+
+            return $options;
+        };
+
+        if ($request->input('q')) {
+            $products = ProductSum::findListAvailableProducts($condition($request->user()->place->id, $request->input('type_id'), $request->input('order'), $request->input('order_dir')), $request->input('q'));
+        } else {
+            $products = ProductSum::getListAvailableProducts($condition($request->user()->place->id, $request->input('type_id'), $request->input('order'), $request->input('order_dir')));
+        }
+
+        return response()->json($products);
     }
 }

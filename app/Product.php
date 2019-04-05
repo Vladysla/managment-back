@@ -10,5 +10,8 @@ class Product extends Model
 
     protected $fillable = [ 'brand', 'model', 'price_arrival', 'price_sell', 'photo', 'type_id' ];
 
+    public function type() {
+        return $this->belongsTo('App\Type', 'type_id');
+    }
 
 }
