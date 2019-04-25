@@ -349,9 +349,9 @@ class ProductController extends Controller
 
     public function getSeparatedProductsForPlace(Request $request)
     {
-        $condition = function ($place_id, $type_id, $order, $order_dir) {
+        $condition = function ($sold, $place_id, $type_id, $order, $order_dir) {
             $options = [];
-            array_push($options, ['sold', '=', '0']);
+            array_push($options, ['sold', '=', $sold]);
             array_push($options, ['place_id', '=', $place_id]);
             $type_id && array_push($options, ['type_id', '=', $type_id]);
             $order && $options['order'] = $order;
@@ -361,9 +361,9 @@ class ProductController extends Controller
         };
 
         if ($request->input('q')) {
-            $products = ProductSum::findListAvailableProducts($condition($request->user()->place->id, $request->input('type_id'), $request->input('order'), $request->input('order_dir')), $request->input('q'));
+            $products = ProductSum::findListAvailableProducts($condition($request->input('sold'), $request->user()->place->id, $request->input('type_id'), $request->input('order'), $request->input('order_dir')), $request->input('q'));
         } else {
-            $products = ProductSum::getListAvailableProducts($condition($request->user()->place->id, $request->input('type_id'), $request->input('order'), $request->input('order_dir')));
+            $products = ProductSum::getListAvailableProducts($condition($request->input('sold'), $request->user()->place->id, $request->input('type_id'), $request->input('order'), $request->input('order_dir')));
         }
 
         return response()->json($products);

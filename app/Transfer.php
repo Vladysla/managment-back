@@ -14,6 +14,11 @@ class Transfer extends Model
         return $this->belongsTo('App\ProductSum', 'product_id')->with(['product', 'size', 'color']);
     }
 
+    public function product_sum_transfer()
+    {
+        return $this->belongsTo('App\ProductSum', 'product_id')->with(['product.type', 'size', 'color']);
+    }
+
     public function from_place()
     {
         return $this->belongsTo('App\Place', 'from_place');

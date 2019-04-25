@@ -19,13 +19,21 @@ class TransferController extends Controller
     {
         $transferProducts = [];
         foreach ($request->input('product_sum_ids') as $product_id) {
-            $transfer = new Transfer;
-            $transfer->product_id = $product_id;
-            $transfer->from_place = $request->input('place_from');
-            $transfer->to_place = $request->input('place_to');
-            $transfer->status = 0;
-            $transfer->save();
-            $transferProducts[] = $transfer;
+            $findTransfer = Transfer::where([
+                ['product_id', $product_id],
+                ['from_place', $request->input('place_from')],
+                ['to_place', $request->input('place_to')],
+                ['status', '0']
+            ])->first();
+            if($findTransfer == null) {
+                $transfer = new Transfer;
+                $transfer->product_id = $product_id;
+                $transfer->from_place = $request->input('place_from');
+                $transfer->to_place = $request->input('place_to');
+                $transfer->status = 0;
+                $transfer->save();
+                $transferProducts[] = $transfer;
+            }
         }
 
         return response()->json([
@@ -38,14 +46,13 @@ class TransferController extends Controller
         $transferredProduct = Transfer::find($request->input('transfer_id'));
         $transferredProduct->status = 1;
         $transferredProduct->save();
-
         $productSum = ProductSum::find($transferredProduct->product_id);
 
         $productSum->place_id = $transferredProduct->to_place;
         $productSum->save();
 
         return response()->json([
-            'id' => $productSum->sum_id
+            'id' => $transferredProduct->id
         ], 200);
     }
 
@@ -61,8 +68,18 @@ class TransferController extends Controller
 
     public function getListMyIncomeProducts(Request $request)
     {
-        $transferredProducts = Transfer::with(['product_sum', 'from_place', 'to_place'])
+        $transferredProducts = Transfer::with(['product_sum_transfer', 'from_place', 'to_place'])
+            ->where('status', '0')
+            ->where('to_place', $request->user()->place_id)
+            ->paginate(2);
+        return response()->json($transferredProducts, 200);
+    }
+
+    public function getListMyHistory(Request $request)
+    {
+        $transferredProducts = Transfer::with(['product_sum_transfer', 'from_place', 'to_place'])
             ->where('from_place', $request->user()->place_id)
+            ->where('status', '1')
             ->orWhere('to_place', $request->user()->place_id)
             ->paginate(2);
         return response()->json($transferredProducts, 200);
