@@ -25,7 +25,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     // SELLING
     Route::post('/my/sell',                'SellController@sellProducts');
     Route::get( '/my/sell/history',        'SellController@getSoldProductsPerDay');
-    Route::get( '/my/sell/history/{date}/{place?}', 'SellController@getListHistoryByDate');
+    Route::get( '/my/sell/history/{date}', 'SellController@getListHistoryByDate');
 });
 
 Route::get('/products',                    'ProductController@getAllAvailableProducts');

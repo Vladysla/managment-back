@@ -41,7 +41,7 @@ class SellController extends Controller
             $order_direction = $request->input('order_dir');
         }
 
-        return ProductSum::select(DB::raw('SUM(products.price_sell) as sum_price, sum_id, places.name, sold_at'))
+        return ProductSum::select(DB::raw('SUM(products.price_sell) as sum_price, sum_id, places.name, places.id, sold_at'))
             ->where($options)
             ->join('products', 'products_sum.product_id', 'products.id')
             ->join('places', 'products_sum.place_id', 'places.id')
@@ -51,19 +51,47 @@ class SellController extends Controller
             ->paginate(2);
     }
 
-    public function getListHistoryByDate(Request $request, $date, $place = null)
+    public function getListHistoryByDate(Request $request, $date)
     {
         $options = [
             'sold' => 1
         ];
-        if($place && $request->user()->role == 'admin') {
-            $options['place_id'] = $place;
+
+        if($request->input('place') && $request->user()->role == 'admin') {
+            $options['place_id'] = $request->input('place');
+        } else {
+            $options['place_id'] = $request->user()->place_id;
         }
 
-        return ProductSum::with(['product.type', 'color', 'size'])
-            ->where($options)
-            ->whereRaw("DATE(sold_at) = DATE('$date')")
-            ->paginate(2);
+        $order = 'sold_at';
+        $order_direction = 'desc';
+
+        if ($request->input('order')) {
+            $order = $request->input('order');
+        }
+        if ($request->input('order_dir')) {
+            $order_direction = $request->input('order_dir');
+        }
+
+        if($q = $request->input('q')) {
+            $products = ProductSum::with(['product.type', 'color', 'size'])
+                ->where($options)
+                ->where('products.model', 'LIKE', "%$q%")
+                ->orWhere('products.brand', 'LIKE', "%$q%")
+                ->join('products', 'products_sum.product_id', 'products.id')
+                ->whereRaw("DATE(sold_at) = DATE('$date')")
+                ->orderBy($order, $order_direction)
+                ->paginate(2);
+        } else {
+            $products = ProductSum::with(['product.type', 'color', 'size'])
+                ->where($options)
+                ->join('products', 'products_sum.product_id', 'products.id')
+                ->whereRaw("DATE(sold_at) = DATE('$date')")
+                ->orderBy($order, $order_direction)
+                ->paginate(2);
+        }
+
+        return $products;
     }
 
 }
