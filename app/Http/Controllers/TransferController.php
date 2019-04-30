@@ -77,10 +77,20 @@ class TransferController extends Controller
 
     public function getListMyHistory(Request $request)
     {
+        $order = 'created_at';
+        $order_direction = 'desc';
+
+        if ($request->input('order')) {
+            $order = $request->input('order');
+        }
+        if ($request->input('order_dir')) {
+            $order_direction = $request->input('order_dir');
+        }
+
         $transferredProducts = Transfer::with(['product_sum_transfer', 'from_place', 'to_place'])
             ->where('from_place', $request->user()->place_id)
-            ->where('status', '1')
             ->orWhere('to_place', $request->user()->place_id)
+            ->orderBy($order, $order_direction)
             ->paginate(2);
         return response()->json($transferredProducts, 200);
     }
