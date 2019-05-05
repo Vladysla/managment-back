@@ -312,20 +312,26 @@ class ProductController extends Controller
 
     public function getTypes()
     {
-        $places = Type::all();
-        return response()->json($places);
+        $types = Type::all();
+        return response()->json($types);
     }
 
     public function getColors()
     {
-        $places = Color::all();
-        return response()->json($places);
+        $colors = Color::all();
+        return response()->json($colors);
     }
 
     public function getSizes()
     {
-        $places = Size::all();
-        return response()->json($places);
+        $sizes = Size::all();
+        return response()->json($sizes);
+    }
+
+    public function getAllModels()
+    {
+        $products = Product::with('type')->get(['model', 'brand', 'id', 'photo', 'type_id', 'price_arrival', 'price_sell']);
+        return response()->json($products);
     }
 
     public function getCurrency()

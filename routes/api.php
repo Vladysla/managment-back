@@ -35,6 +35,7 @@ Route::get('/places',                      'ProductController@getPlaces');
 Route::get('/types',                       'ProductController@getTypes');
 Route::get('/colors',                      'ProductController@getColors');
 Route::get('/sizes',                       'ProductController@getSizes');
+Route::get('/models',                      'ProductController@getAllModels');
 
 Route::get('/sale/products',               'ProductController@getSoldProducts');
 Route::get('/currency',                    'ProductController@getCurrency');
