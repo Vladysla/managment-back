@@ -10,6 +10,8 @@ use App\Size;
 use App\Type;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Intervention\Image\Facades\Image;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -214,24 +216,45 @@ class ProductController extends Controller
     public function storeProduct(Request $request)
     {
         try {
-
-            if($request->product_isset) {
-                $product = Product::find($request->product_id);
+            foreach (json_decode($request->product_color_size) as $color => $sizes) {
+                foreach ($sizes as $size => $count) {
+                    if (!is_numeric($count)) {
+                        return $this->showMessage('Not numeric!', 400);
+                    }
+                }
+            }
+            if($request->product_exist != 0) {
+                $product = Product::find(json_decode($request->productSelected)->id);
                 if($product) {
                     $product_id = $product->id;
                 } else {
                     return $this->showMessage('Product not found!', 403);
                 }
             } else {
-                $newProduct = Product::create($request->all());
+                $productPhoto = 'no-photo.jpg';
+                $newProduct = new Product;
+                $newProduct->brand = $request->brand;
+                $newProduct->model = $request->model;
+                $newProduct->price_arrival = $request->price_arrival;
+                $newProduct->price_sell = $request->price_sell;
+                $newProduct->type_id = $request->type_id;
+                if ($request->hasFile('product_photo')) {
+                    $extension = $request->file('product_photo')->getClientOriginalExtension();
+                    $filenameStore = Str::random(8) . time() . '.' . $extension;
+                    $request->file('product_photo')->storeAs('images', $filenameStore);
+                    $img = Image::make(public_path("uploads/images/$filenameStore"))->resize(450, 450);
+                    $img->save(public_path("uploads/images/$filenameStore"));
+                    $productPhoto = $filenameStore;
+                }
+                $newProduct->photo = $productPhoto;
+                $newProduct->save();
                 if($newProduct) {
                     $product_id = $newProduct->id;
                 } else {
                     return $this->showMessage('Product create error!', 500);
                 }
             }
-
-            foreach ($request->data as $color => $sizes) {
+            foreach (json_decode($request->product_color_size) as $color => $sizes) {
                 foreach ($sizes as $size => $count) {
                     for ($i = 0; $i < $count; $i++) {
                         ProductSum::create([
@@ -336,21 +359,25 @@ class ProductController extends Controller
 
     public function getCurrency()
     {
-        $json_url = file_get_contents('http://bank-ua.com/export/exchange_rate_cash.json');
-        $json = str_replace('},
-        ]',"}
-        ]",$json_url);
-        $dataArr = json_decode($json);
+        $apikey = '6aff90e0340be69cbc04';
+        $json = file_get_contents("https://free.currconv.com/api/v7/convert?q=USD_UAH&compact=ultra&apiKey={$apikey}");
+        $obj = json_decode($json, true);
+        $val = floatval($obj["USD_UAH"]);
+//        $json_url = file_get_contents('http://bank-ua.com/export/exchange_rate_cash.json');
+//        $json = str_replace('},
+//        ]',"}
+//        ]",$json_url);
+//        $dataArr = json_decode($json);
+//
+//        $data = collect($dataArr);
+//
+//        foreach ($data as $bank) {
+//            if ($bank->bankName == 'ПриватБанк' && $bank->codeAlpha == 'USD') {
+//                return response()->json($bank);
+//            }
+//        }
 
-        $data = collect($dataArr);
-
-        foreach ($data as $bank) {
-            if ($bank->bankName == 'ПриватБанк' && $bank->codeAlpha == 'USD') {
-                return response()->json($bank->rateSale);
-            }
-        }
-
-        return response()->json($data);
+        return response()->json($val);
     }
 
     public function getSeparatedProductsForPlace(Request $request)
