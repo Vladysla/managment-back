@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 class TransferController extends Controller
 {
+    private $pageNumber = 30;
+
     private function showMessage(string $message, int $status)
     {
         return response()->json([
@@ -71,7 +73,7 @@ class TransferController extends Controller
         $transferredProducts = Transfer::with(['product_sum_transfer', 'from_place', 'to_place'])
             ->where('status', '0')
             ->where('to_place', $request->user()->place_id)
-            ->paginate(2);
+            ->paginate($this->pageNumber);
         return response()->json($transferredProducts, 200);
     }
 
@@ -91,7 +93,7 @@ class TransferController extends Controller
             ->where('from_place', $request->user()->place_id)
             ->orWhere('to_place', $request->user()->place_id)
             ->orderBy($order, $order_direction)
-            ->paginate(2);
+            ->paginate($this->pageNumber);
         return response()->json($transferredProducts, 200);
     }
 }

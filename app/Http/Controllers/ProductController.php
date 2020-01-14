@@ -15,6 +15,17 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    private $pageNumber = 30;
+
+    public function testDatabase()
+    {
+//        for ($i = 0; $i < 500; $i++) {
+//            $product = factory(Product::class)->create();
+//        }
+//        for ($i = 0; $i < 10000; $i++) {
+//            $product = factory(ProductSum::class)->create();
+//        }
+    }
 
     /**
      * @param string $message
@@ -135,7 +146,7 @@ class ProductController extends Controller
      */
     public function getAllAvailableProductsForPlace(Request $request)
     {
-        $products = $this->paginateProducts(2, $request, $request->user()->place->id);
+        $products = $this->paginateProducts($this->pageNumber, $request, $request->user()->place->id);
 
         return response()->json($products);
     }
@@ -161,7 +172,7 @@ class ProductController extends Controller
             return $this->getAvailableProductsForPlaceType($request, $request->input('place_id'), $request->input('type_id'), $request->input('order'), $request->input('order_dir'));
         }
 
-        $products = $this->paginateProducts(2, $request);
+        $products = $this->paginateProducts($this->pageNumber, $request);
 
         return response()->json($products);
 
@@ -169,18 +180,18 @@ class ProductController extends Controller
 
     private function getAvailableProductsForPlaceType(Request $request, $place_id, $type_id, $order = '', $order_dir = "")
     {
-        $products = $this->paginateProducts(2, $request, $place_id, $type_id, "NO", $order, $order_dir);
+        $products = $this->paginateProducts($this->pageNumber, $request, $place_id, $type_id, "NO", $order, $order_dir);
         return response()->json($products);
     }
 
     public function getSoldProducts(Request $request)
     {
         if($request->input('place_id')) {
-            $products = $this->paginateProducts(2, $request, $place = $request->input('place_id'), $type = "ALL", $sold = "1");
+            $products = $this->paginateProducts($this->pageNumber, $request, $place = $request->input('place_id'), $type = "ALL", $sold = "1");
             return response()->json($products);
         }
 
-        $products = $this->paginateProducts(2, $request, $place = "ALL", $type = "ALL", $sold = "1");
+        $products = $this->paginateProducts($this->pageNumber, $request, $place = "ALL", $type = "ALL", $sold = "1");
         return response()->json($products);
     }
 

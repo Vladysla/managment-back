@@ -6,9 +6,23 @@ use App\ProductSum;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
+use Faker;
 
 class SellController extends Controller
 {
+    private $pageNumber = 30;
+
+    public function testDatabaseSell()
+    {
+//        $faker = Faker\Factory::create();
+//        for ($i = 5213; $i < 12000; $i++) {
+//            $product = ProductSum::find($i);
+//            $product->sold = 1;
+//            $product->sold_at = $faker->dateTimeBetween($startDate = '-10 month', $endDate = 'now');
+//            $product->save();
+//        }
+    }
+
     public function sellProducts(Request $request)
     {
         foreach ($request->input('product_sum_ids') as $prod_id) {
@@ -48,7 +62,7 @@ class SellController extends Controller
             ->groupBy(DB::raw('DATE(products_sum.sold_at)'))
             ->groupBy(DB::raw('products_sum.place_id'))
             ->orderBy($order, $order_direction)
-            ->paginate(2);
+            ->paginate($this->pageNumber);
     }
 
     public function getListHistoryByDate(Request $request, $date)
@@ -81,14 +95,14 @@ class SellController extends Controller
                 ->join('products', 'products_sum.product_id', 'products.id')
                 ->whereRaw("DATE(sold_at) = DATE('$date')")
                 ->orderBy($order, $order_direction)
-                ->paginate(2);
+                ->paginate($this->pageNumber);
         } else {
             $products = ProductSum::with(['product.type', 'color', 'size'])
                 ->where($options)
                 ->join('products', 'products_sum.product_id', 'products.id')
                 ->whereRaw("DATE(sold_at) = DATE('$date')")
                 ->orderBy($order, $order_direction)
-                ->paginate(2);
+                ->paginate($this->pageNumber);
         }
 
         return $products;

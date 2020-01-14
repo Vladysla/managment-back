@@ -14,7 +14,7 @@ class CreateProductsSumTable extends Migration
     public function up()
     {
         Schema::create('products_sum', function (Blueprint $table) {
-            $table->increments('id');
+            $table->increments('sum_id');
             $table->unsignedInteger('product_id');
             $table->unsignedInteger('color_id');
             $table->unsignedInteger('size_id');

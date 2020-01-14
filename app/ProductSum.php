@@ -57,7 +57,7 @@ class ProductSum extends Model
             ->join('products', 'products.id', 'products_sum.product_id')
             ->where($condition)
             ->orderBy($order, $order_direction)
-            ->paginate(2);
+            ->paginate(30);
     }
 
     public static function findListAvailableProducts(array $condition, $q)
@@ -82,7 +82,7 @@ class ProductSum extends Model
             ->orWhere('products.brand', 'LIKE', "%$q%")
             ->orWhere('sum_id', 'LIKE', "%$q%")
             ->orderBy($order, $order_direction)
-            ->paginate(2);
+            ->paginate(30);
     }
 
     /**
@@ -123,13 +123,13 @@ class ProductSum extends Model
     public static function getProductInfo($product_id, $sold)
     {
         $sold == "NO" && $sold = '0';
-        return DB::select(DB::raw("SELECT 
-                product_id, brand, model, price_arrival, price_sell, types.name as type_name, sold_at, 
+        return DB::select(DB::raw("SELECT
+                product_id, brand, model, price_arrival, price_sell, types.name as type_name, sold_at,
                 (SELECT COUNT(*) FROM products_sum WHERE product_id = $product_id AND sold = 0) as avilable_count,
                 (SELECT COUNT(*) FROM products_sum WHERE product_id = $product_id AND sold = 1) as sold_count,
                 (SELECT COUNT(*) FROM products_sum WHERE product_id = $product_id) as total_count
             FROM products_sum
-                inner join `products` on `products`.`id` = `products_sum`.`product_id` 
+                inner join `products` on `products`.`id` = `products_sum`.`product_id`
                 inner join `types` on `types`.`id` = `products`.`type_id`
             WHERE product_id = $product_id AND sold = 0
             GROUP BY product_id"));
