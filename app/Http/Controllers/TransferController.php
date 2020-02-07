@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Transfer;
 use App\ProductSum;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TransferController extends Controller
 {
@@ -20,23 +21,25 @@ class TransferController extends Controller
     public function transferProducts(Request $request)
     {
         $transferProducts = [];
-        foreach ($request->input('product_sum_ids') as $product_id) {
-            $findTransfer = Transfer::where([
-                ['product_id', $product_id],
-                ['from_place', $request->input('place_from')],
-                ['to_place', $request->input('place_to')],
-                ['status', '0']
-            ])->first();
-            if($findTransfer == null) {
-                $transfer = new Transfer;
-                $transfer->product_id = $product_id;
-                $transfer->from_place = $request->input('place_from');
-                $transfer->to_place = $request->input('place_to');
-                $transfer->status = 0;
-                $transfer->save();
-                $transferProducts[] = $transfer;
+        DB::transaction(function () use ($request, $transferProducts) {
+            foreach ($request->input('product_sum_ids') as $product_id) {
+                $findTransfer = Transfer::where([
+                    ['product_id', $product_id],
+                    ['from_place', $request->input('place_from')],
+                    ['to_place', $request->input('place_to')],
+                    ['status', '0']
+                ])->first();
+                if($findTransfer == null) {
+                    $transfer = new Transfer;
+                    $transfer->product_id = $product_id;
+                    $transfer->from_place = $request->input('place_from');
+                    $transfer->to_place = $request->input('place_to');
+                    $transfer->status = 0;
+                    $transfer->save();
+                    $transferProducts[] = $transfer;
+                }
             }
-        }
+        }, 2);
 
         return response()->json([
             'transferred' => $transferProducts
@@ -46,6 +49,11 @@ class TransferController extends Controller
     public function applyTransfer(Request $request)
     {
         $transferredProduct = Transfer::find($request->input('transfer_id'));
+        if ($transferredProduct == null || $transferredProduct->status == 1) {
+            return response()->json([
+                'message' => 'Этот запрос уже был обработан!'
+            ]);
+        }
         $transferredProduct->status = 1;
         $transferredProduct->save();
         $productSum = ProductSum::find($transferredProduct->product_id);
@@ -61,6 +69,11 @@ class TransferController extends Controller
     public function cancelTransfer(Request $request)
     {
         $transferredProduct = Transfer::find($request->input('transfer_id'));
+        if ($transferredProduct == null || $transferredProduct->status == 1) {
+            return response()->json([
+                'message' => 'Этот запрос уже был обработан!'
+            ]);
+        }
         $transferredProduct->delete();
 
         return response()->json([
@@ -95,5 +108,13 @@ class TransferController extends Controller
             ->orderBy($order, $order_direction)
             ->paginate($this->pageNumber);
         return response()->json($transferredProducts, 200);
+    }
+
+    public function getTotalIncomeProducts(Request $request)
+    {
+        $place = $request->input('place_id');
+        $count = Transfer::countedIncomeProducts($place);
+
+        return response()->json($count, 200);
     }
 }

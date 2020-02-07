@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -53,7 +54,8 @@ class ProductController extends Controller
                         'price_arrival' => $product->price_arrival,
                         'price_sell' => $product->price_sell,
                         'sold_at' => $product->sold_at,
-                        'type' => $product->type_name
+                        'type' => $product->type_name,
+                        'photo' => $product->photo
                     ];
                     if(!array_key_exists('places', $items[$product->product_id])) {
                         $items[$product->product_id]['places'] = [];
@@ -80,7 +82,8 @@ class ProductController extends Controller
                         'price_arrival' => $product->price_arrival,
                         'price_sell' => $product->price_sell,
                         'sold_at' => $product->sold_at,
-                        'type' => $product->type_name
+                        'type' => $product->type_name,
+                        'photo' => $product->photo
                     ];
                     if(!array_key_exists('sizes', $items[$product->sold_at])) {
                         $items[$product->sold_at]['sizes'] = [];
@@ -227,61 +230,63 @@ class ProductController extends Controller
     public function storeProduct(Request $request)
     {
         try {
-            foreach (json_decode($request->product_color_size) as $color => $sizes) {
-                foreach ($sizes as $size => $count) {
-                    if (!is_numeric($count)) {
-                        return $this->showMessage('Not numeric!', 400);
+            DB::transaction(function () use ($request) {
+                foreach (json_decode($request->product_color_size) as $color => $sizes) {
+                    foreach ($sizes as $size => $count) {
+                        if (!is_numeric($count)) {
+                            return $this->showMessage('Not numeric!', 400);
+                        }
                     }
                 }
-            }
-            if($request->product_exist != 0) {
-                $product = Product::find(json_decode($request->productSelected)->id);
-                if($product) {
-                    $product_id = $product->id;
+                if($request->product_exist != 0) {
+                    $product = Product::find(json_decode($request->productSelected)->id);
+                    if($product) {
+                        $product_id = $product->id;
+                    } else {
+                        return $this->showMessage('Product not found!', 403);
+                    }
                 } else {
-                    return $this->showMessage('Product not found!', 403);
-                }
-            } else {
-                $productPhoto = 'no-photo.jpg';
-                $newProduct = new Product;
-                $newProduct->brand = $request->brand;
-                $newProduct->model = $request->model;
-                $newProduct->price_arrival = $request->price_arrival;
-                $newProduct->price_sell = $request->price_sell;
-                $newProduct->type_id = $request->type_id;
-                if ($request->hasFile('product_photo')) {
-                    $extension = $request->file('product_photo')->getClientOriginalExtension();
-                    $filenameStore = Str::random(8) . time() . '.' . $extension;
-                    $request->file('product_photo')->storeAs('images', $filenameStore);
-                    $img = Image::make(public_path("uploads/images/$filenameStore"))->resize(450, 450);
-                    $img->save(public_path("uploads/images/$filenameStore"));
-                    $productPhoto = $filenameStore;
-                }
-                $newProduct->photo = $productPhoto;
-                $newProduct->save();
-                if($newProduct) {
-                    $product_id = $newProduct->id;
-                } else {
-                    return $this->showMessage('Product create error!', 500);
-                }
-            }
-            foreach (json_decode($request->product_color_size) as $color => $sizes) {
-                foreach ($sizes as $size => $count) {
-                    for ($i = 0; $i < $count; $i++) {
-                        ProductSum::create([
-                            'product_id' => $product_id,
-                            'color_id'   => $color,
-                            'size_id'    => $size,
-                            'place_id'   => $request->place_id
-                        ]);
+                    $productPhoto = 'no-photo.jpg';
+                    $newProduct = new Product;
+                    $newProduct->brand = $request->brand;
+                    $newProduct->model = $request->model;
+                    $newProduct->price_arrival = $request->price_arrival;
+                    $newProduct->price_sell = $request->price_sell;
+                    $newProduct->type_id = $request->type_id;
+                    if ($request->hasFile('product_photo')) {
+                        $extension = $request->file('product_photo')->getClientOriginalExtension();
+                        $filenameStore = Str::random(8) . time() . '.' . $extension;
+                        $request->file('product_photo')->storeAs('images', $filenameStore);
+                        $img = Image::make(public_path("uploads/images/$filenameStore"))->resize(450, 450);
+                        $img->save(public_path("uploads/images/$filenameStore"));
+                        $productPhoto = $filenameStore;
+                    }
+                    $newProduct->photo = $productPhoto;
+                    $newProduct->save();
+                    if($newProduct) {
+                        $product_id = $newProduct->id;
+                    } else {
+                        return $this->showMessage('Product create error!', 400);
                     }
                 }
-            }
+                foreach (json_decode($request->product_color_size) as $color => $sizes) {
+                    foreach ($sizes as $size => $count) {
+                        for ($i = 0; $i < $count; $i++) {
+                            ProductSum::create([
+                                'product_id' => $product_id,
+                                'color_id'   => $color,
+                                'size_id'    => $size,
+                                'place_id'   => $request->place_id
+                            ]);
+                        }
+                    }
+                }
 
-            return $this->showMessage('Success!', 200);
+                return $this->showMessage('Success!', 200);
+            }, 2);
 
         } catch (\Exception $exception) {
-            return $this->showMessage('Error on server', 500);
+            return $this->showMessage('Error on server', 400);
         }
     }
 
@@ -370,25 +375,15 @@ class ProductController extends Controller
 
     public function getCurrency()
     {
-        $apikey = '6aff90e0340be69cbc04';
-        $json = file_get_contents("https://free.currconv.com/api/v7/convert?q=USD_UAH&compact=ultra&apiKey={$apikey}");
-        $obj = json_decode($json, true);
-        $val = floatval($obj["USD_UAH"]);
-//        $json_url = file_get_contents('http://bank-ua.com/export/exchange_rate_cash.json');
-//        $json = str_replace('},
-//        ]',"}
-//        ]",$json_url);
-//        $dataArr = json_decode($json);
-//
-//        $data = collect($dataArr);
-//
-//        foreach ($data as $bank) {
-//            if ($bank->bankName == 'ПриватБанк' && $bank->codeAlpha == 'USD') {
-//                return response()->json($bank);
-//            }
-//        }
+        try {
+            $bank_page = file_get_contents('https://minfin.com.ua/currency/');
+        } catch (\Exception $exception) {
+            $bank_page = '';
+        }
+        preg_match('/<span class=\\"mfcur-nbu-full-wrap\\">\\n([\d]+.[\d]+)</', $bank_page, $match);
+        $reslut = ($match && is_array($match)) ? $match[1] : '0';
 
-        return response()->json($val);
+        return response()->json($reslut);
     }
 
     public function getSeparatedProductsForPlace(Request $request)

@@ -40,6 +40,8 @@ Route::get('/models',                      'ProductController@getAllModels');
 Route::get('/sale/products',               'ProductController@getSoldProducts');
 Route::get('/currency',                    'ProductController@getCurrency');
 
+Route::post('my/transfer/count', 'TransferController@getTotalIncomeProducts');
+
 // TESTS
 Route::get('/test',                    'ProductController@testDatabase');
 Route::get('/test-sell', 'SellController@testDatabaseSell');

@@ -73,7 +73,6 @@ class ProductSum extends Model
             unset($condition['order_dir']);
         }
 
-        //dd($condition);
 
         return self::with(['product', 'color', 'size', 'place', 'type'])
             ->join('products', 'products.id', 'products_sum.product_id')
@@ -109,7 +108,7 @@ class ProductSum extends Model
 
     public static function getProductFullInfo($product_id, $sold)
     {
-        return DB::table("products_sum")->select(DB::raw("product_id, brand, model, price_arrival, price_sell, sizes.name as size_name, colors.name as color_name, types.name as type_name, places.name as place_name, sold_at, COUNT(*) as products_count"))
+        return DB::table("products_sum")->select(DB::raw("product_id, brand, model, photo, price_arrival, price_sell, sizes.name as size_name, colors.name as color_name, types.name as type_name, places.name as place_name, sold_at, COUNT(*) as products_count"))
             ->join('colors', 'colors.id', 'products_sum.color_id')
             ->join('sizes', 'sizes.id', 'products_sum.size_id')
             ->join('products', 'products.id', 'products_sum.product_id')
@@ -124,7 +123,7 @@ class ProductSum extends Model
     {
         $sold == "NO" && $sold = '0';
         return DB::select(DB::raw("SELECT
-                product_id, brand, model, price_arrival, price_sell, types.name as type_name, sold_at,
+                product_id, brand, model, photo, price_arrival, price_sell, types.name as type_name, sold_at,
                 (SELECT COUNT(*) FROM products_sum WHERE product_id = $product_id AND sold = 0) as avilable_count,
                 (SELECT COUNT(*) FROM products_sum WHERE product_id = $product_id AND sold = 1) as sold_count,
                 (SELECT COUNT(*) FROM products_sum WHERE product_id = $product_id) as total_count

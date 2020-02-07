@@ -28,4 +28,11 @@ class Transfer extends Model
     {
         return $this->belongsTo('App\Place', 'to_place');
     }
+
+    public static function countedIncomeProducts($place)
+    {
+        return DB::table('transfer')
+            ->select(DB::raw("COUNT(`product_id`) as count"))
+            ->where(['to_place' => $place, 'status' => '0'])->first()->count;
+    }
 }
