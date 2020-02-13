@@ -20,8 +20,8 @@ class TransferController extends Controller
 
     public function transferProducts(Request $request)
     {
-        $transferProducts = [];
-        DB::transaction(function () use ($request, $transferProducts) {
+        $res = DB::transaction(function () use ($request) {
+            $transferProducts = [];
             foreach ($request->input('product_sum_ids') as $product_id) {
                 $findTransfer = Transfer::where([
                     ['product_id', $product_id],
@@ -29,20 +29,22 @@ class TransferController extends Controller
                     ['to_place', $request->input('place_to')],
                     ['status', '0']
                 ])->first();
-                if($findTransfer == null) {
+                $findProductId = ProductSum::find($product_id)->place_id;
+                if(($findTransfer == null) && ($findProductId === $request->input('place_from'))) {
                     $transfer = new Transfer;
                     $transfer->product_id = $product_id;
                     $transfer->from_place = $request->input('place_from');
                     $transfer->to_place = $request->input('place_to');
                     $transfer->status = 0;
                     $transfer->save();
-                    $transferProducts[] = $transfer;
+                    array_push($transferProducts, $transfer->id);
                 }
             }
+            return $transferProducts;
         }, 2);
 
         return response()->json([
-            'transferred' => $transferProducts
+            'transferred' => $res
         ], 200);
     }
 
@@ -116,5 +118,25 @@ class TransferController extends Controller
         $count = Transfer::countedIncomeProducts($place);
 
         return response()->json($count, 200);
+    }
+
+    public function applyAll(Request $request)
+    {
+        $ids = DB::transaction(function () use ($request) {
+            $place_id = $request->user()->place_id;
+            $ids = Transfer::getPendingIds($place_id)->pluck('product_id')->toArray();
+            Transfer::applyAll($place_id);
+            $products = DB::table('products_sum')->whereIn('sum_id', $ids)->update(['place_id' => $place_id]);
+            return $products;
+        });
+        return response()->json($ids);
+    }
+
+    public function cancelAll(Request $request)
+    {
+        $place_id = $request->user()->place_id;
+        $query = Transfer::where(['to_place' => $place_id, 'status' => 0])->delete();
+
+        return response()->json($query);
     }
 }

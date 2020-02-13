@@ -22,6 +22,8 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get( '/my/transfer/history',    'TransferController@getListMyHistory');
     Route::post('/my/transfer/apply',      'TransferController@applyTransfer');
     Route::post('/my/transfer/cancel',     'TransferController@cancelTransfer');
+    Route::put('my/transfer/all',       'TransferController@applyAll');
+    Route::delete('my/transfer/all/cancel','TransferController@cancelAll');
     // SELLING
     Route::post('/my/sell',                'SellController@sellProducts');
     Route::get( '/my/sell/history',        'SellController@getSoldProductsPerDay');
@@ -40,8 +42,11 @@ Route::get('/models',                      'ProductController@getAllModels');
 Route::get('/sale/products',               'ProductController@getSoldProducts');
 Route::get('/currency',                    'ProductController@getCurrency');
 
-Route::post('my/transfer/count', 'TransferController@getTotalIncomeProducts');
+Route::post('my/transfer/count',           'TransferController@getTotalIncomeProducts');
 
 // TESTS
-Route::get('/test',                    'ProductController@testDatabase');
-Route::get('/test-sell', 'SellController@testDatabaseSell');
+Route::get('/test',                        'ProductController@testDatabase');
+Route::get('/test-sell',                   'SellController@testDatabaseSell');
+
+// PRODUCT CHECK TEST VERSION
+Route::get('/check-products',              'ProductCheckController@storeAll');

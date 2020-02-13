@@ -35,4 +35,18 @@ class Transfer extends Model
             ->select(DB::raw("COUNT(`product_id`) as count"))
             ->where(['to_place' => $place, 'status' => '0'])->first()->count;
     }
+
+    public static function getPendingIds($place)
+    {
+        return DB::table('transfer')
+            ->select('product_id')
+            ->where(['to_place' => $place, 'status' => '0'])->get();
+    }
+
+    public static function applyAll($place)
+    {
+        return DB::table('transfer')
+            ->where(['to_place' => $place, 'status' => '0'])
+            ->update(['status' => 1]);
+    }
 }
