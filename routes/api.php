@@ -9,6 +9,7 @@ Route::group(['prefix' =>     'auth'], function () {
 
 Route::group(['middleware' => ['auth:api', 'admin']], function (){
     Route::post('/products',               'ProductController@storeProduct');
+    Route::post('/products/edit',                'ProductController@editProduct');
     Route::get( 'user',                    'AuthController@user');
 });
 

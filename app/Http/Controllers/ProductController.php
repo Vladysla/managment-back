@@ -55,7 +55,9 @@ class ProductController extends Controller
                         'price_sell' => $product->price_sell,
                         'sold_at' => $product->sold_at,
                         'type' => $product->type_name,
-                        'photo' => $product->photo
+                        'photo' => $product->photo,
+                        'type_id' => $product->type_id,
+                        'place_id' => $product->place_id,
                     ];
                     if(!array_key_exists('places', $items[$product->product_id])) {
                         $items[$product->product_id]['places'] = [];
@@ -285,6 +287,37 @@ class ProductController extends Controller
                 return $this->showMessage('Success!', 200);
             }, 2);
 
+        } catch (\Exception $exception) {
+            return $this->showMessage('Error on server', 400);
+        }
+    }
+
+    public function editProduct(Request $request)
+    {
+        try {
+            $product = Product::find($request->product_id);
+            $product->brand = $request->brand;
+            $product->model = $request->model;
+            $product->price_arrival = $request->price_arrival;
+            $product->price_sell = $request->price_sell;
+            $product->type_id = $request->type_id;
+            $productPhoto = $product->photo;
+            if ($request->hasFile('product_photo')) {
+                $extension = $request->file('product_photo')->getClientOriginalExtension();
+                $filenameStore = Str::random(8) . time() . '.' . $extension;
+                $request->file('product_photo')->storeAs('images', $filenameStore);
+                $img = Image::make(public_path("uploads/images/$filenameStore"))->resize(450, 450);
+                $img->save(public_path("uploads/images/$filenameStore"));
+                $productPhoto = $filenameStore;
+            }
+            $product->photo = $productPhoto;
+            $product->save();
+            $product->push($product->type);
+            if($product) {
+                return response()->json($product);
+            } else {
+                return $this->showMessage('Product not found!', 404);
+            }
         } catch (\Exception $exception) {
             return $this->showMessage('Error on server', 400);
         }
